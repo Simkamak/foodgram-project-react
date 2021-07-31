@@ -16,7 +16,7 @@ class CustomUser(AbstractUser):
     )
     last_name = models.CharField(
         verbose_name='Фамилия',
-        max_length=1
+        max_length=150
     )
     email = models.EmailField(
         verbose_name='Адрес электронной почты',
