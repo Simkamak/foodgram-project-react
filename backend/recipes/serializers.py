@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
 from .models import Tag, Ingredient, Recipe, IngredientForRecipe, Follow
-from user.models import CustomUser
+
 
 
 class TagSerializer(serializers.ModelSerializer):
