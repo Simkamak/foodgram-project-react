@@ -1,15 +1,17 @@
 from django.db import models
 from colorfield.fields import ColorField
-from users.models import CustomUser
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class Follow(models.Model):
     user = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE,
+        User, on_delete=models.CASCADE,
         related_name='followers',
         verbose_name='Пользователь подписчик')
     author = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE,
+        User, on_delete=models.CASCADE,
         related_name='following',
         verbose_name='Пользователь на которого подписываемся')
 
@@ -19,7 +21,7 @@ class Follow(models.Model):
         unique_together = ['author', 'user']
 
     def __str__(self):
-        return f'{self.user} => {self.author}'
+        return f'{self.user} подписан на {self.author}'
 
 
 class Tag(models.Model):
@@ -61,7 +63,7 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField(
         max_length=20,
         verbose_name='Единица измерения',
-        help_text='Выберите единицу измерения'
+        help_text='Выберите единицу измерения',
     )
 
     class Meta:
@@ -70,33 +72,33 @@ class Ingredient(models.Model):
         verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
-        return self.name
+        return f'{self.name}, {self.measurement_unit}'
 
 
 class Recipe(models.Model):
     author = models.ForeignKey(
-        CustomUser, on_delete=models.PROTECT,
+        User, on_delete=models.CASCADE,
         related_name='recipes', verbose_name='Автор рецепта'
     )
-    title = models.CharField(
+    name = models.CharField(
         max_length=50, verbose_name='Название рецепта'
     )
     image = models.ImageField(
         verbose_name='Картинка',
         help_text='Выберите изображение'
     )
-    description = models.TextField(
+    text = models.TextField(
         max_length=1000, verbose_name='Описание рецепта'
     )
     ingredients = models.ManyToManyField(
         Ingredient, through='IngredientForRecipe',
         verbose_name='Ингредиенты',
-        help_text='Укажите ингредиенты и их количество'
+        help_text='Укажите ингредиенты и их количество',
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления'
     )
-    tag = models.ManyToManyField(
+    tags = models.ManyToManyField(
         Tag,
         verbose_name='Теги',
         help_text='Выберите один или несколько тегов'
@@ -111,17 +113,19 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
 
     def __str__(self):
-        return self.title
+        return self.name
 
 
 class IngredientForRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
+        related_name='ingredients_amounts'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
+        related_name='ingredients_amounts'
     )
     amount = models.PositiveSmallIntegerField(
         null=True,
@@ -133,5 +137,35 @@ class IngredientForRecipe(models.Model):
 
     def __str__(self):
         return f'{self.ingredient} в {self.recipe}'
+
+
+class Favorites(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE,)
+    pub_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
+
+    class Meta:
+        verbose_name = 'Избранное'
+        verbose_name_plural = verbose_name
+        unique_together = ['user', 'recipe']
+
+    def __str__(self):
+        return f'{self.recipe} в избранном у {self.user}'
+
+
+class Purchase(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE,)
+    pub_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
+
+    class Meta:
+        verbose_name = 'Покупка'
+        verbose_name_plural = 'Покупки'
+        ordering = ['-pub_date']
+        unique_together = ['user', 'recipe']
+
+    def __str__(self):
+        return f'{self.recipe} в списке покупок у {self.user}'
+
 
 

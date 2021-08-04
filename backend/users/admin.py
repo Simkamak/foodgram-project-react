@@ -5,7 +5,7 @@ User = get_user_model()
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ('email', 'username', 'first_name', 'last_name')
+    list_display = ('id', 'email', 'username', 'first_name', 'last_name')
     list_filter = ('email', 'username')
 
 
