@@ -1,7 +1,11 @@
 from django.contrib import admin
-from .models import Follow, Ingredient, Recipe, Tag
+from .models import Follow, Ingredient, Recipe, Tag, IngredientForRecipe
 from import_export.admin import ImportMixin
-from  .resources import IngredientResource
+from .resources import IngredientResource
+
+
+class IngredientForRecipeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'ingredient', 'recipe', 'amount')
 
 
 class RecipeAdmin(admin.ModelAdmin):
@@ -23,8 +27,8 @@ class FollowAdmin(admin.ModelAdmin):
     list_display = ('author', 'user')
 
 
+admin.site.register(IngredientForRecipe, IngredientForRecipeAdmin)
 admin.site.register(Follow, FollowAdmin)
 admin.site.register(Tag, TagAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(Recipe, RecipeAdmin)
-
