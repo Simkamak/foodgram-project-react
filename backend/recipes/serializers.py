@@ -1,9 +1,10 @@
-from rest_framework import serializers
-from drf_extra_fields.fields import Base64ImageField
-from .models import Tag, Ingredient, Recipe, IngredientForRecipe, Follow, Favorites, Purchase
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers
 
+from .models import (Favorites, Follow, Ingredient, IngredientForRecipe,
+                     Purchase, Recipe, Tag)
 
 User = get_user_model()
 
@@ -54,10 +55,13 @@ class FollowSerializer(serializers.ModelSerializer):
         return Follow.objects.create(user=user, author=author)
 
 
-class FavoritesSerializer(serializers.ModelSerializer):
+class FavoriteSerializer(serializers.ModelSerializer):
+    user = serializers.IntegerField(source='user.id')
+    recipe = serializers.IntegerField(source='recipe.id')
+
     class Meta:
         model = Favorites
-        fields = '__all__'
+        fields = ['user', 'recipe']
 
     def create(self, validated_data):
         user = validated_data["user"]
@@ -69,6 +73,7 @@ class FavoritesSerializer(serializers.ModelSerializer):
                     "message": "Нельзя добавить повторно в избранное"
                 }
             )
+        print(validated_data)
         return validated_data
 
 
@@ -203,6 +208,7 @@ class RecipeSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ["id", "name", "image", "cooking_time"]
+
 
 
 class ShowFollowsSerializer(CustomUserSerializer):

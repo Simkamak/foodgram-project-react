@@ -1,6 +1,6 @@
-from django.db import models
 from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
+from django.db import models
 
 User = get_user_model()
 
@@ -141,7 +141,7 @@ class IngredientForRecipe(models.Model):
 
 class Favorites(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE,)
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     pub_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
 
     class Meta:
@@ -150,7 +150,7 @@ class Favorites(models.Model):
         unique_together = ['user', 'recipe']
 
     def __str__(self):
-        return f'{self.recipe} в избранном у {self.user}'
+        return f'Рецепт {self.recipe} в избранном у {self.user}'
 
 
 class Purchase(models.Model):

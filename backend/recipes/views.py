@@ -1,16 +1,19 @@
-from rest_framework import filters, permissions, status, viewsets
-from .serializers import TagSerializer, RecipeReadSerializer, RecipeSerializer, CustomUserSerializer, IngredientSerializer, \
-    ShowFollowsSerializer, FollowSerializer
-from .models import Tag, Recipe, IngredientForRecipe, Ingredient, Purchase, Favorites, Follow
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from .filters import IngredientNameFilter
 import django_filters.rest_framework
 from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view, permission_classes, action
+from django.shortcuts import get_object_or_404
+from rest_framework import filters, permissions, status, viewsets
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
+
+from .filters import IngredientNameFilter
+from .models import Favorites, Follow, Ingredient, Purchase, Recipe, Tag
+from .serializers import (FavoriteSerializer, FollowSerializer,
+                          IngredientSerializer, RecipeReadSerializer,
+                          RecipeSerializer, RecipeSubscriptionSerializer,
+                          ShowFollowsSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -24,7 +27,7 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
-    # filter_class = RecipeFilter
+    #filter_class = RecipeFilter
     pagination_class = PageNumberPagination
 
 
@@ -42,9 +45,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
         elif is_in_shopping_cart == "false":
             queryset = queryset.exclude(cart__in=cart)
         if is_favorited == "true":
-            queryset = queryset.filter(favorite__in=favorite)
+            queryset = queryset.filter(favorites__in=favorite)
         elif is_favorited == "false":
-            queryset = queryset.exclude(favorite__in=favorite)
+            queryset = queryset.exclude(favorites__in=favorite)
         return queryset.all()
 
     def get_serializer_class(self):
@@ -53,19 +56,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return RecipeSerializer
 
 
+
 class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
     queryset = Ingredient.objects.all()
     permission_classes = (AllowAny, )
     pagination_class = None
     filterset_class = IngredientNameFilter
-
-
-#class UsersViewSet(viewsets.ReadOnlyModelViewSet):
-#    serializer_class = CustomUserSerializer
-#    queryset = User.objects.all()
-#    permission_classes = AllowAny
-#    pagination_class = PageNumberPagination
 
 
 @api_view(['GET', ])
@@ -78,6 +75,7 @@ def show_follows(request):
     serializer = ShowFollowsSerializer(
         result_page, many=True, context={'current_user': request.user})
     return paginator.get_paginated_response(serializer.data)
+
 
 
 class FollowView(APIView):
@@ -93,8 +91,6 @@ class FollowView(APIView):
         if request.method == "GET":
             serializer.is_valid(raise_exception=True)
             serializer.save(user=request.user)
-            #return Response(f'{user} подписался от {author}', status=status.HTTP_201_CREATED)
-            #follow = get_object_or_404(Follow, user=user, author=author)
             serializer = ShowFollowsSerializer(author)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -105,3 +101,26 @@ class FollowView(APIView):
         follow.delete()
         return Response(f'{user} отписался от {author}', status=status.HTTP_204_NO_CONTENT)
 
+
+class FavoriteView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+    http_method_names = ['get', 'delete']
+
+    def get(self, request, recipe_id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        serializer = FavoriteSerializer(
+            data={'user': user.id, 'recipe': recipe.id}, context={'request': request}
+        )
+        if request.method == "GET":
+            serializer.is_valid(raise_exception=True)
+            serializer.save(recipe=recipe, user=request.user)
+            serializer = RecipeSubscriptionSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, recipe_id):
+        user = request.user
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        favorite = get_object_or_404(Favorites, user=user, recipe=recipe)
+        favorite.delete()
+        return Response(f'Рецепт {recipe} удален из избранного у пользователя {user}', status=status.HTTP_204_NO_CONTENT)
