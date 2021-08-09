@@ -66,18 +66,21 @@ class FavoriteSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = validated_data["user"]
         recipe = validated_data["recipe"]
-        obj, created = Favorites.objects.get_or_create(user=user, recipe=recipe)
+        obj, created = Favorites.objects.get_or_create(user=user,
+                                                       recipe=recipe)
         if not created:
             raise serializers.ValidationError(
                 {
                     "message": "Нельзя добавить повторно в избранное"
                 }
             )
-        print(validated_data)
         return validated_data
 
 
 class PurchaseSerializer(serializers.ModelSerializer):
+    user = serializers.IntegerField(source='user.id')
+    recipe = serializers.IntegerField(source='recipe.id')
+
     class Meta:
         model = Purchase
         fields = '__all__'
@@ -104,7 +107,9 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientForRecipeSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField(source='ingredient.name', read_only=True)
-    measurement_unit = serializers.ReadOnlyField(source='ingredient.measurement_unit', read_only=True)
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit', read_only=True
+    )
     amount = serializers.IntegerField()
 
     class Meta:
@@ -121,11 +126,11 @@ class IngredientForRecipeCreate(serializers.ModelSerializer):
         fields = ['id', 'amount']
 
 
-
 class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
+    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(),
+                                              many=True)
     author = CustomUserSerializer(read_only=True)
     image = Base64ImageField(max_length=None, use_url=True)
     ingredients = IngredientForRecipeCreate(many=True)
@@ -133,7 +138,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = [
-            'id', 'tags', 'author', 'ingredients', 'is_favorited', 'is_in_shopping_cart', 'name', 'image', 'text',
+            'id', 'tags', 'author', 'ingredients', 'is_favorited',
+            'is_in_shopping_cart', 'name', 'image', 'text',
             'cooking_time', 'pub_date'
         ]
 
@@ -161,8 +167,11 @@ class RecipeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Убедитесь, что это значение больше 0.'
                 )
-            ingredient_instance = get_object_or_404(Ingredient, pk=ingredient.get('id'))
-            IngredientForRecipe.objects.create(recipe=recipe, ingredient=ingredient_instance, amount=amount)
+            ingredient_instance = get_object_or_404(Ingredient,
+                                                    pk=ingredient.get('id'))
+            IngredientForRecipe.objects.create(recipe=recipe,
+                                               ingredient=ingredient_instance,
+                                               amount=amount)
         recipe.save()
         return recipe
 
@@ -171,7 +180,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
+        instance.cooking_time = validated_data.get('cooking_time',
+                                                   instance.cooking_time)
         if validated_data.get('image') is not None:
             instance.image = validated_data.get('image', instance.image)
         instance.save()
@@ -185,7 +195,9 @@ class RecipeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     'Убедитесь, что это значение больше 0.'
                 )
-            ingredient_instance = get_object_or_404(Ingredient, pk=new_ingredient_data['id'])
+            ingredient_instance = get_object_or_404(
+                Ingredient, pk=new_ingredient_data['id']
+            )
             IngredientForRecipe.objects.create(
                 recipe=instance,
                 ingredient=ingredient_instance,
@@ -208,7 +220,6 @@ class RecipeSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ["id", "name", "image", "cooking_time"]
-
 
 
 class ShowFollowsSerializer(CustomUserSerializer):

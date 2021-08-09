@@ -142,7 +142,8 @@ class IngredientForRecipe(models.Model):
 class Favorites(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    pub_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
+    pub_date = models.DateTimeField(auto_now_add=True,
+                                    verbose_name='Дата добавления')
 
     class Meta:
         verbose_name = 'Избранное'
@@ -156,7 +157,8 @@ class Favorites(models.Model):
 class Purchase(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE,)
-    pub_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
+    pub_date = models.DateTimeField(auto_now_add=True,
+                                    verbose_name='Дата добавления')
 
     class Meta:
         verbose_name = 'Покупка'
@@ -165,7 +167,7 @@ class Purchase(models.Model):
         unique_together = ['user', 'recipe']
 
     def __str__(self):
-        return f'{self.recipe} в списке покупок у {self.user}'
+        return f'Рецепт {self.recipe} в списке покупок у {self.user}'
 
 
 
