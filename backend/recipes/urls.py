@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (FavoriteView, FollowView, IngredientViewSet,
                     RecipesViewSet, ShoppingCartView, TagsViewSet,
-                    show_follows)
+                    download_shopping_cart, show_follows)
 
 router = DefaultRouter()
 router.register('tags', TagsViewSet, basename='tags')
@@ -19,6 +19,8 @@ urlpatterns = [
          name='favorites'),
     path('recipes/<int:recipe_id>/shopping_cart/', ShoppingCartView.as_view(),
          name='shopping_cart'),
+    path('recipes/download_shopping_cart/', download_shopping_cart,
+         name='download_shopping_cart'),
     path('', include(router.urls)),
 
 ]

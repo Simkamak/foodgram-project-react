@@ -1,15 +1,18 @@
 import django_filters.rest_framework
 from django.contrib.auth import get_user_model
+from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, permissions, status, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .filters import IngredientNameFilter
-from .models import Favorites, Follow, Ingredient, Purchase, Recipe, Tag
+from .filters import IngredientNameFilter, RecipeFilter
+from .models import (Favorites, Follow, Ingredient, IngredientForRecipe,
+                     Purchase, Recipe, Tag)
+from .permissions import AdminOrAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, FollowSerializer,
                           IngredientSerializer, PurchaseSerializer,
                           RecipeReadSerializer, RecipeSerializer,
@@ -28,8 +31,9 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
-    #filter_class = RecipeFilter
+    filter_class = RecipeFilter
     pagination_class = PageNumberPagination
+    permission_classes = [AdminOrAuthorOrReadOnly, ]
 
     def get_queryset(self):
         queryset = Recipe.objects.all()
@@ -76,6 +80,42 @@ def show_follows(request):
     return paginator.get_paginated_response(serializer.data)
 
 
+@api_view(['GET', ])
+@permission_classes([IsAuthenticated])
+def download_shopping_cart(request):
+    user = request.user
+    cart = user.purchase_set.all()
+    buying_list = {}
+    for item in cart:
+        recipe = item.recipe
+        ingredients_in_recipe = IngredientForRecipe.objects.filter(
+            recipe=recipe
+        )
+        for item in ingredients_in_recipe:
+            amount = item.amount
+            name = item.ingredient.name
+            measurement_unit = item.ingredient.measurement_unit
+            if name not in buying_list:
+                buying_list[name] = {
+                    'amount': amount,
+                    'measurement_unit': measurement_unit
+                }
+            else:
+                buying_list[name]['amount'] = (
+                    buying_list[name]['amount'] + amount
+                )
+    shopping_list = []
+    for item in buying_list:
+        shopping_list.append(
+            f'{item} - {buying_list[item]["amount"]}, '
+            f'{buying_list[item]["measurement_unit"]}'
+        )
+        response = HttpResponse(shopping_list, 'Content-Type: text/plain')
+        response['Content-Disposition'] = 'attachment; ' \
+                                          'filename="shopping_list.txt"'
+        return response
+
+
 class FollowView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     http_method_names = ['get', 'delete']
@@ -97,7 +137,8 @@ class FollowView(APIView):
         author = get_object_or_404(User, id=user_id)
         follow = get_object_or_404(Follow, user=user, author=author)
         follow.delete()
-        return Response(f'{user} отписался от {author}', status=status.HTTP_204_NO_CONTENT)
+        return Response(f'{user} отписался от {author}',
+                        status=status.HTTP_204_NO_CONTENT)
 
 
 class FavoriteView(APIView):
