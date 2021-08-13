@@ -127,11 +127,10 @@ class FollowView(APIView):
         serializer = FollowSerializer(
             data={'user': user.id, 'author': user_id}
         )
-        if request.method == "GET":
-            serializer.is_valid(raise_exception=True)
-            serializer.save(user=request.user)
-            serializer = ShowFollowsSerializer(author)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+        serializer = ShowFollowsSerializer(author)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, user_id):
         user = request.user
@@ -153,11 +152,10 @@ class FavoriteView(APIView):
             data={'user': user.id, 'recipe': recipe.id},
             context={'request': request}
         )
-        if request.method == "GET":
-            serializer.is_valid(raise_exception=True)
-            serializer.save(recipe=recipe, user=request.user)
-            serializer = RecipeSubscriptionSerializer(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(recipe=recipe, user=request.user)
+        serializer = RecipeSubscriptionSerializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, recipe_id):
         user = request.user
@@ -179,11 +177,10 @@ class ShoppingCartView(APIView):
             data={'user': user.id, 'recipe': recipe.id},
             context={'request': request}
         )
-        if request.method == "GET":
-            serializer.is_valid(raise_exception=True)
-            serializer.save(recipe=recipe, user=request.user)
-            serializer = RecipeSubscriptionSerializer(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(recipe=recipe, user=request.user)
+        serializer = RecipeSubscriptionSerializer(recipe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, recipe_id):
         user = request.user

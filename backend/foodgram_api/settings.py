@@ -7,9 +7,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-20%a4_&h@kvthnlb&=c7lb3-pcvx8rsj)%_*f)y%7z&wyo_b-c'
+#SECRET_KEY = 'django-insecure-20%a4_&h@kvthnlb&=c7lb3-pcvx8rsj)%_*f)y%7z&wyo_b-c'
+SECRET_KEY = os.environ.get("SECRET_KEY")
 
-#SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
@@ -68,13 +68,6 @@ WSGI_APPLICATION = 'foodgram_api.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#}
-#}
 
 DATABASES = {
     'default': {
