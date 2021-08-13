@@ -4,3 +4,4 @@
 Superuser:
 login: admin@admin.ru
 password: admin
+url: http://178.154.254.60
