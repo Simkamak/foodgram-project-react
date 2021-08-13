@@ -191,4 +191,3 @@ class ShoppingCartView(APIView):
         cart.delete()
         return Response(f'Рецепт {recipe} удален из корзины у пользователя '
                         f'{user}', status=status.HTTP_204_NO_CONTENT)
-

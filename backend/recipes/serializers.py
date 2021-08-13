@@ -238,5 +238,3 @@ class ShowFollowsSerializer(CustomUserSerializer):
     def get_recipes_count(self, obj):
         queryset = Recipe.objects.filter(author=obj)
         return queryset.count()
-
-

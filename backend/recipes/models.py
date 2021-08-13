@@ -168,6 +168,3 @@ class Purchase(models.Model):
 
     def __str__(self):
         return f'Рецепт {self.recipe} в списке покупок у {self.user}'
-
-
-
