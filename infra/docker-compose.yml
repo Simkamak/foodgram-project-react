@@ -10,9 +10,7 @@ services:
     restart: always
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: simkamak/foodgram_backend:latest
     restart: always
     volumes:
       - static_value:/code/backend_static/
@@ -23,11 +21,9 @@ services:
       - ./.env
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: simkamak/foodgram_front:latest
     volumes:
-      - ../frontend/:/app/result_build/
+      - frontend_data:/app/build/
 
   nginx:
     image: nginx:1.19.3
@@ -35,9 +31,9 @@ services:
       - 80:80
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
-      - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
+      - frontend_data:/usr/share/nginx/html/
+      - ./docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
+      - ./docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
       - static_value:/code/backend_static/
       - media_value:/code/backend_media/
     restart: always
@@ -49,3 +45,4 @@ volumes:
   postgres_data:
   static_value:
   media_value:
+  frontend_data:
