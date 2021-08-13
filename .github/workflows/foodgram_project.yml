@@ -47,4 +47,5 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: simkamak/foodgram_backend:latest
+          context: ./backend/
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_backend:latest
