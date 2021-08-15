@@ -110,20 +110,20 @@ class IngredientForRecipeSerializer(serializers.ModelSerializer):
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit', read_only=True
     )
-    amount = serializers.IntegerField()
 
     class Meta:
         model = IngredientForRecipe
         fields = ['id', 'name', 'amount', 'measurement_unit']
 
 
-class IngredientForRecipeCreate(serializers.ModelSerializer):
+class IngredientForRecipeCreate(IngredientForRecipeSerializer):
     id = serializers.IntegerField(write_only=True)
     amount = serializers.IntegerField(write_only=True)
 
-    class Meta:
-        model = IngredientForRecipe
-        fields = ['id', 'amount']
+    def to_representation(self, instance):
+        return IngredientForRecipeSerializer(
+            IngredientForRecipe.objects.get(ingredient=instance.id)
+        ).data
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -178,17 +178,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop('ingredients')
         tags_data = validated_data.pop('tags')
-        instance.name = validated_data.get('name', instance.name)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time',
-                                                   instance.cooking_time)
-        if validated_data.get('image') is not None:
-            instance.image = validated_data.get('image', instance.image)
-        instance.save()
-        instance.tags.set(tags_data)
         recipe = Recipe.objects.filter(id=instance.id)
         recipe.update(**validated_data)
-        IngredientForRecipe.objects.filter(recipe=instance).delete()
         for new_ingredient_data in ingredients_data:
             amount = new_ingredient_data['amount']
             if amount < 1:
@@ -198,11 +189,19 @@ class RecipeSerializer(serializers.ModelSerializer):
             ingredient_instance = get_object_or_404(
                 Ingredient, pk=new_ingredient_data['id']
             )
-            IngredientForRecipe.objects.create(
+            IngredientForRecipe.objects.get_or_create(
                 recipe=instance,
                 ingredient=ingredient_instance,
                 amount=amount
             )
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.cooking_time = validated_data.get('cooking_time',
+                                                   instance.cooking_time)
+        if validated_data.get('image') is not None:
+            instance.image = validated_data.get('image', instance.image)
+        instance.save()
+        instance.tags.set(tags_data)
         return instance
 
 
