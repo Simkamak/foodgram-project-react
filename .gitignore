@@ -133,4 +133,4 @@ dmypy.json
 
 .DS_Store
 /backend/backend_media/*
-/backend/.env
+/.env

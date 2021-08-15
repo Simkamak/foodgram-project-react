@@ -108,13 +108,13 @@ def download_shopping_cart(request):
     for item in buying_list:
         shopping_list.append(
             f'{item} - {buying_list[item]["amount"]}, '
-            f'{buying_list[item]["measurement_unit"]}'
+            f'{buying_list[item]["measurement_unit"]}\n'
         )
-        response = HttpResponse(shopping_list, 'Content-Type: text/plain')
-        response['Content-Disposition'] = (
+    response = HttpResponse(shopping_list, 'Content-Type: text/plain')
+    response['Content-Disposition'] = (
             'attachment;' 'filename="shopping_list.txt"'
         )
-        return response
+    return response
 
 
 class FollowView(APIView):
