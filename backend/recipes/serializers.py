@@ -177,30 +177,36 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop('ingredients')
+        print(ingredients_data)
         tags_data = validated_data.pop('tags')
         recipe = Recipe.objects.filter(id=instance.id)
         recipe.update(**validated_data)
-        for new_ingredient_data in ingredients_data:
-            amount = new_ingredient_data['amount']
+        ingredients_instance = [
+            ingredient for ingredient in instance.ingredients.all()
+        ]
+        for item in ingredients_data:
+            amount = item['amount']
+            ingredient_id = item['id']
             if amount < 1:
                 raise serializers.ValidationError(
                     'Убедитесь, что это значение больше 0.'
                 )
-            ingredient_instance = get_object_or_404(
-                Ingredient, pk=new_ingredient_data['id']
-            )
-            IngredientForRecipe.objects.get_or_create(
-                recipe=instance,
-                ingredient=ingredient_instance,
-                amount=amount
-            )
-        instance.name = validated_data.get('name', instance.name)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time',
-                                                   instance.cooking_time)
+            if IngredientForRecipe.objects.filter(
+                    id=ingredient_id, amount=amount
+            ).exists():
+                ingredients_instance.remove(
+                    IngredientForRecipe.objects.get(id=ingredient_id,
+                                                    amount=amount
+                                                    ).ingredient)
+            else:
+                IngredientForRecipe.objects.get_or_create(
+                    recipe=instance,
+                    ingredient=get_object_or_404(Ingredient, id=ingredient_id),
+                    amount=amount
+                )
         if validated_data.get('image') is not None:
             instance.image = validated_data.get('image', instance.image)
-        instance.save()
+        instance.ingredients.remove(*ingredients_instance)
         instance.tags.set(tags_data)
         return instance
 

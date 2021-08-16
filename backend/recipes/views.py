@@ -59,6 +59,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeSerializer
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
 
 class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
