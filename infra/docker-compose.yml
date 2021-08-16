@@ -10,9 +10,7 @@ services:
     restart: always
 
   backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
+    image: simkamak/foodgram_backend:latest
     restart: always
     volumes:
       - static_value:/code/backend_static/
