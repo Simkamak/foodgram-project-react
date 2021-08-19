@@ -127,7 +127,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context['request']
-        exist_recipe = Recipe.objects.filter(name=data['name']).exists
+        exist_recipe = Recipe.objects.filter(name=data['name']).exists()
         if request.method == 'POST' and exist_recipe:
             raise serializers.ValidationError({
                 "errors": f"Рецепт с таким названием: {data['name']} "
@@ -153,13 +153,14 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         recipe = Recipe.objects.create(author=request.user, **validated_data)
         recipe.tags.set(tags_data)
-        for ingredient in ingredients:
-            amount = ingredient.get('amount')
-            ingredient_instance = get_object_or_404(Ingredient,
-                                                    pk=ingredient.get('id'))
-            IngredientForRecipe.objects.create(recipe=recipe,
-                                               ingredient=ingredient_instance,
-                                               amount=amount)
+        ingredient_in_recipe = [IngredientForRecipe(
+            recipe=recipe,
+            ingredient=get_object_or_404(Ingredient, pk=ingredient['id']),
+            amount=ingredient['amount']
+        )
+            for ingredient in ingredients
+        ]
+        IngredientForRecipe.objects.bulk_create(ingredient_in_recipe)
         recipe.save()
         return recipe
 
