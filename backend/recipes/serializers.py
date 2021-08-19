@@ -38,20 +38,24 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         fields = ['user', 'author']
 
+    def validate(self, data):
+        user = data['user']['id']
+        author = data['author']['id']
+        follow_exist = Follow.objects.filter(
+            user=user, author__id=author
+        ).exists()
+        if user == author:
+            raise serializers.ValidationError(
+                {"errors": 'Вы не можете подписаться на самого себя'}
+            )
+        elif follow_exist:
+            raise serializers.ValidationError({"errors": 'Вы уже подписаны'})
+        return data
+
     def create(self, validated_data):
         author = validated_data.get('author')
         author = get_object_or_404(User, pk=author.get('id'))
         user = validated_data.get('user')
-        if user == author:
-            raise serializers.ValidationError(
-                'Вы не можете подписаться на самого себя'
-            )
-        if Follow.objects.filter(
-                author=author,
-                user=user).exists():
-            raise serializers.ValidationError(
-                'Вы уже подписаны'
-            )
         return Follow.objects.create(user=user, author=author)
 
 
@@ -63,17 +67,21 @@ class FavoriteSerializer(serializers.ModelSerializer):
         model = Favorites
         fields = ['user', 'recipe']
 
+    def validate(self, data):
+        user = data['user']['id']
+        recipe = data['recipe']['id']
+        if Favorites.objects.filter(user=user, recipe__id=recipe).exists():
+            raise serializers.ValidationError(
+                {
+                    "errors": "Нельзя добавить повторно в избранное"
+                }
+            )
+        return data
+
     def create(self, validated_data):
         user = validated_data["user"]
         recipe = validated_data["recipe"]
-        obj, created = Favorites.objects.get_or_create(user=user,
-                                                       recipe=recipe)
-        if not created:
-            raise serializers.ValidationError(
-                {
-                    "message": "Нельзя добавить повторно в избранное"
-                }
-            )
+        Favorites.objects.get_or_create(user=user, recipe=recipe)
         return validated_data
 
 
@@ -85,14 +93,21 @@ class PurchaseSerializer(serializers.ModelSerializer):
         model = Purchase
         fields = '__all__'
 
+    def validate(self, data):
+        user = data['user']['id']
+        recipe = data['recipe']['id']
+        if Purchase.objects.filter(user=user, recipe__id=recipe).exists():
+            raise serializers.ValidationError(
+                {
+                    "errors": "Вы уже добавили рецепт в корзину"
+                }
+            )
+        return data
+
     def create(self, validated_data):
         user = validated_data["user"]
         recipe = validated_data["recipe"]
-        obj, created = Purchase.objects.get_or_create(user=user, recipe=recipe)
-        if not created:
-            raise serializers.ValidationError(
-                {"message": "Вы уже добавили рецепт в корзину"}
-            )
+        Purchase.objects.get_or_create(user=user, recipe=recipe)
         return validated_data
 
 
@@ -120,10 +135,19 @@ class IngredientForRecipeCreate(IngredientForRecipeSerializer):
     id = serializers.IntegerField(write_only=True)
     amount = serializers.IntegerField(write_only=True)
 
+    def validate_amount(self, amount):
+        if amount < 1:
+            raise serializers.ValidationError(
+                'Убедитесь, что это значение больше 0.'
+            )
+        return amount
+
     def to_representation(self, instance):
-        return IngredientForRecipeSerializer(
-            IngredientForRecipe.objects.get(ingredient=instance.id)
-        ).data
+        ingredient_in_recipe = [
+            item for item in
+            IngredientForRecipe.objects.filter(ingredient=instance)
+        ]
+        return IngredientForRecipeSerializer(ingredient_in_recipe).data
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -163,10 +187,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         recipe.tags.set(tags_data)
         for ingredient in ingredients:
             amount = ingredient.get('amount')
-            if amount < 1:
-                raise serializers.ValidationError(
-                    'Убедитесь, что это значение больше 0.'
-                )
             ingredient_instance = get_object_or_404(Ingredient,
                                                     pk=ingredient.get('id'))
             IngredientForRecipe.objects.create(recipe=recipe,
@@ -177,7 +197,6 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         ingredients_data = validated_data.pop('ingredients')
-        print(ingredients_data)
         tags_data = validated_data.pop('tags')
         recipe = Recipe.objects.filter(id=instance.id)
         recipe.update(**validated_data)
@@ -187,10 +206,6 @@ class RecipeSerializer(serializers.ModelSerializer):
         for item in ingredients_data:
             amount = item['amount']
             ingredient_id = item['id']
-            if amount < 1:
-                raise serializers.ValidationError(
-                    'Убедитесь, что это значение больше 0.'
-                )
             if IngredientForRecipe.objects.filter(
                     id=ingredient_id, amount=amount
             ).exists():

@@ -1,5 +1,6 @@
 from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.db import models
 
 User = get_user_model()
@@ -18,7 +19,11 @@ class Follow(models.Model):
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
-        unique_together = ['author', 'user']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['author', 'user'], name='unique_follow'
+            )
+        ]
 
     def __str__(self):
         return f'{self.user} подписан на {self.author}'
@@ -96,7 +101,8 @@ class Recipe(models.Model):
         help_text='Укажите ингредиенты и их количество',
     )
     cooking_time = models.PositiveSmallIntegerField(
-        verbose_name='Время приготовления'
+        verbose_name='Время приготовления', default=1,
+        validators=[MinValueValidator(1, 'Значение не может быть меньше 1')]
     )
     tags = models.ManyToManyField(
         Tag,
@@ -128,8 +134,8 @@ class IngredientForRecipe(models.Model):
         related_name='ingredients_amounts',
     )
     amount = models.PositiveSmallIntegerField(
-        null=True,
-        verbose_name='Количество'
+        verbose_name='Количество', default=1,
+        validators=[MinValueValidator(1, 'Значение не может быть меньше 1')]
     )
 
     class Meta:
@@ -148,7 +154,11 @@ class Favorites(models.Model):
     class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = verbose_name
-        unique_together = ['user', 'recipe']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'], name='unique_favorite',
+            )
+        ]
 
     def __str__(self):
         return f'Рецепт {self.recipe} в избранном у {self.user}'
@@ -164,7 +174,11 @@ class Purchase(models.Model):
         verbose_name = 'Покупка'
         verbose_name_plural = 'Покупки'
         ordering = ['-pub_date']
-        unique_together = ['user', 'recipe']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'], name='unique_shopping_cart'
+            )
+        ]
 
     def __str__(self):
         return f'Рецепт {self.recipe} в списке покупок у {self.user}'
