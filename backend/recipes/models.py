@@ -6,29 +6,6 @@ from django.db import models
 User = get_user_model()
 
 
-class Follow(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='followers',
-        verbose_name='Пользователь подписчик')
-    author = models.ForeignKey(
-        User, on_delete=models.CASCADE,
-        related_name='following',
-        verbose_name='Пользователь на которого подписываемся')
-
-    class Meta:
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['author', 'user'], name='unique_follow'
-            )
-        ]
-
-    def __str__(self):
-        return f'{self.user} подписан на {self.author}'
-
-
 class Tag(models.Model):
     name = models.CharField(
         verbose_name='Название',

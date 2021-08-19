@@ -3,21 +3,21 @@ from django.contrib.auth import get_user_model
 from django.http.response import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from users.serializers import RecipeSubscriptionSerializer
+
 from .filters import IngredientNameFilter, RecipeFilter
-from .models import (Favorites, Follow, Ingredient, IngredientForRecipe,
-                     Purchase, Recipe, Tag)
+from .models import (Favorites, Ingredient, IngredientForRecipe, Purchase,
+                     Recipe, Tag)
 from .permissions import AdminOrAuthorOrReadOnly
-from .serializers import (FavoriteSerializer, FollowSerializer,
-                          IngredientSerializer, PurchaseSerializer,
-                          RecipeReadSerializer, RecipeSerializer,
-                          RecipeSubscriptionSerializer, ShowFollowsSerializer,
-                          TagSerializer)
+from .serializers import (FavoriteSerializer, IngredientSerializer,
+                          PurchaseSerializer, RecipeReadSerializer,
+                          RecipeSerializer, TagSerializer)
 
 User = get_user_model()
 
@@ -59,6 +59,28 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return RecipeReadSerializer
         return RecipeSerializer
 
+    @action(methods=["GET", "DELETE"],
+            url_path='favorite', url_name='favorite',
+            permission_classes=[permissions.IsAuthenticated], detail=True)
+    def favorite(self, request, pk):
+        recipe = get_object_or_404(Recipe, id=pk)
+        serializer = FavoriteSerializer(
+            data={'user': request.user.id, 'recipe': recipe.id}
+        )
+        if request.method == "GET":
+            serializer.is_valid(raise_exception=True)
+            serializer.save(recipe=recipe, user=request.user)
+            serializer = RecipeSubscriptionSerializer(recipe)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        favorite = get_object_or_404(
+            Favorites, user=request.user, recipe__id=pk
+        )
+        favorite.delete()
+        return Response(
+            f'Рецепт {favorite.recipe} удален из избранного у пользователя '
+            f'{request.user}', status=status.HTTP_204_NO_CONTENT
+        )
+
 
 class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
@@ -66,18 +88,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
     permission_classes = (AllowAny, )
     pagination_class = None
     filterset_class = IngredientNameFilter
-
-
-@api_view(['GET', ])
-@permission_classes([IsAuthenticated])
-def show_follows(request):
-    user_obj = User.objects.filter(following__user=request.user)
-    paginator = PageNumberPagination()
-    paginator.page_size = 6
-    result_page = paginator.paginate_queryset(user_obj, request)
-    serializer = ShowFollowsSerializer(
-        result_page, many=True, context={'current_user': request.user})
-    return paginator.get_paginated_response(serializer.data)
 
 
 @api_view(['GET', ])
@@ -115,57 +125,6 @@ def download_shopping_cart(request):
         'attachment;' 'filename="shopping_list.txt"'
     )
     return response
-
-
-class FollowView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    http_method_names = ['get', 'delete']
-
-    def get(self, request, user_id):
-        user = request.user
-        author = get_object_or_404(User, id=user_id)
-        serializer = FollowSerializer(
-            data={'user': user.id, 'author': user_id}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
-        serializer = ShowFollowsSerializer(author)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, user_id):
-        user = request.user
-        follow = get_object_or_404(Follow, user=user, author__id=user_id)
-        follow.delete()
-        return Response(f'{user} отписался от {follow.author}',
-                        status=status.HTTP_204_NO_CONTENT)
-
-
-class FavoriteView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
-    http_method_names = ['get', 'delete']
-
-    def get(self, request, recipe_id):
-        user = request.user
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        serializer = FavoriteSerializer(
-            data={'user': user.id, 'recipe': recipe.id},
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save(recipe=recipe, user=request.user)
-        serializer = RecipeSubscriptionSerializer(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def delete(self, request, recipe_id):
-        user = request.user
-        favorite = get_object_or_404(
-            Favorites, user=user, recipe__id=recipe_id
-        )
-        favorite.delete()
-        return Response(
-            f'Рецепт {favorite.recipe} удален из избранного у пользователя '
-            f'{user}, status=status.HTTP_204_NO_CONTENT'
-        )
 
 
 class ShoppingCartView(APIView):

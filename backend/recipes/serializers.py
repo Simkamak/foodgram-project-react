@@ -3,60 +3,18 @@ from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from .models import (Favorites, Follow, Ingredient, IngredientForRecipe,
-                     Purchase, Recipe, Tag)
+from users.serializers import CustomUserSerializer
+
+from .models import (Favorites, Ingredient, IngredientForRecipe, Purchase,
+                     Recipe, Tag)
 
 User = get_user_model()
-
-
-class CustomUserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ('email', 'id', 'username', 'first_name',
-                  'last_name', 'is_subscribed')
-
-    def get_is_subscribed(self, obj):
-        request = self.context.get('request')
-        if request is None or request.user.is_anonymous:
-            return False
-        return Follow.objects.filter(user=request.user, author=obj).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ['id', 'name', 'color', 'slug']
-
-
-class FollowSerializer(serializers.ModelSerializer):
-    user = serializers.IntegerField(source='user.id')
-    author = serializers.IntegerField(source='author.id')
-
-    class Meta:
-        model = Follow
-        fields = ['user', 'author']
-
-    def validate(self, data):
-        user = data['user']['id']
-        author = data['author']['id']
-        follow_exist = Follow.objects.filter(
-            user=user, author__id=author
-        ).exists()
-        if user == author:
-            raise serializers.ValidationError(
-                {"errors": 'Вы не можете подписаться на самого себя'}
-            )
-        elif follow_exist:
-            raise serializers.ValidationError({"errors": 'Вы уже подписаны'})
-        return data
-
-    def create(self, validated_data):
-        author = validated_data.get('author')
-        author = get_object_or_404(User, pk=author.get('id'))
-        user = validated_data.get('user')
-        return Follow.objects.create(user=user, author=author)
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -167,6 +125,16 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time', 'pub_date'
         ]
 
+    def validate(self, data):
+        request = self.context['request']
+        exist_recipe = Recipe.objects.filter(name=data['name']).exists
+        if request.method == 'POST' and exist_recipe:
+            raise serializers.ValidationError({
+                "errors": f"Рецепт с таким названием: {data['name']} "
+                          f"уже существует"
+            })
+        return data
+
     def get_is_favorited(self, obj):
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
@@ -234,27 +202,3 @@ class RecipeReadSerializer(RecipeSerializer):
     def get_ingredients(self, obj):
         ingredients = IngredientForRecipe.objects.filter(recipe=obj)
         return IngredientForRecipeSerializer(ingredients, many=True).data
-
-
-class RecipeSubscriptionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Recipe
-        fields = ["id", "name", "image", "cooking_time"]
-
-
-class ShowFollowsSerializer(CustomUserSerializer):
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = ('email', 'id', 'username', 'first_name',
-                  'last_name', 'is_subscribed', 'recipes', 'recipes_count')
-
-    def get_recipes(self, obj):
-        recipes = Recipe.objects.filter(author=obj)
-        return RecipeSubscriptionSerializer(recipes, many=True).data
-
-    def get_recipes_count(self, obj):
-        queryset = Recipe.objects.filter(author=obj)
-        return queryset.count()
