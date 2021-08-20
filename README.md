@@ -2,10 +2,13 @@
 
 ![api+db+front](https://github.com/Simkamak/foodgram-project-react/actions/workflows/foodgram_project.yml/badge.svg)
 ![api+db+front](https://img.shields.io/github/repo-size/Simkamak/foodgram-project-react)
+
 ##Описание
 
 ---
+
 Проект Foodgram позволяет постить рецепты, делиться и скачивать списки продуктов
+
 
 ###Админ зона
 
@@ -17,7 +20,7 @@
 >
 >url:  http://178.154.254.60
 
-####Заполнение .env:
+###Заполнение .env:
 
 Чтобы добавить переменную в .env необходимо открыть файл .env в корневой 
 директории проекта и поместить туда переменную в формате имя_переменной=значение. 
@@ -31,7 +34,7 @@ DB_HOST=db_host
 DB_PORT=db_port
 SECRET_KEY=my_secret_key
 
-####Автор:
+###Автор:
 
 Автор Максим Горностаев. Задание было выполнено в рамках курса от Yandex 
 Praktikum python-бэкенд разработчик.
