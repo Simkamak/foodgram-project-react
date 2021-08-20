@@ -100,6 +100,7 @@ class IngredientForRecipeCreate(IngredientForRecipeSerializer):
                 'amount': ['Убедитесь, что указали значение больше 0.']
             }
             raise exceptions.ParseError(error_data)
+        return data
 
     def to_representation(self, instance):
         ingredient_in_recipe = [
