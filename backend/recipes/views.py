@@ -76,8 +76,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
         )
         favorite.delete()
         return Response(
-            f'Рецепт {favorite.recipe} удален из избранного у пользователя '
-            f'{request.user}', status=status.HTTP_204_NO_CONTENT
+            data={
+                'message': f'Рецепт {favorite.recipe} удален из избранного у '
+                           f'пользователя {request.user}'},
+            status=status.HTTP_204_NO_CONTENT
         )
 
 
@@ -147,6 +149,8 @@ class ShoppingCartView(APIView):
         cart = get_object_or_404(Purchase, user=user, recipe__id=recipe_id)
         cart.delete()
         return Response(
-            f'Рецепт {cart.recipe} удален из корзины у пользователя {user}, '
-            f'status=status.HTTP_204_NO_CONTENT'
+            data={
+                'message': f'Рецепт {cart.recipe} удален из корзины у '
+                           f'пользователя {user}'},
+            status=status.HTTP_204_NO_CONTENT
         )

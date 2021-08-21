@@ -31,7 +31,8 @@ class CustomUserViewSet(UserViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         follow = get_object_or_404(Follow, user=request.user, author__id=id)
         follow.delete()
-        return Response(f'{request.user} отписался от {follow.author}',
+        return Response(data={'message': f'{request.user} отписался от '
+                                         f'{follow.author}'},
                         status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False,

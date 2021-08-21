@@ -94,7 +94,6 @@ class IngredientForRecipeCreate(IngredientForRecipeSerializer):
 
     def validate(self, data):
         amount = data['amount']
-        print(type(amount) != int)
         if amount < 1:
             error_data = {
                 'amount': ['Убедитесь, что указали значение больше 0.']
@@ -175,7 +174,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             ingredient for ingredient in instance.ingredients.all()
         ]
         for item in ingredients_data:
-            print(item)
             amount = item['amount']
             ingredient_id = item['id']
             if IngredientForRecipe.objects.filter(
