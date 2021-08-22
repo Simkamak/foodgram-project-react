@@ -1,6 +1,6 @@
 from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
 User = get_user_model()
@@ -25,6 +25,12 @@ class Tag(models.Model):
         max_length=200,
         unique=True,
         null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[-a-zA-Z0-9_]+$',
+                message='Недопустимые символы.'
+            )
+        ]
     )
 
     class Meta:
@@ -103,12 +109,10 @@ class IngredientForRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='ingredients_amounts',
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='ingredients_amounts',
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество', default=1,
@@ -142,7 +146,8 @@ class Favorites(models.Model):
 
 
 class Purchase(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='purchases')
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE,)
     pub_date = models.DateTimeField(auto_now_add=True,
                                     verbose_name='Дата добавления')

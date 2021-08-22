@@ -93,20 +93,19 @@ class IngredientForRecipeCreate(IngredientForRecipeSerializer):
     amount = serializers.IntegerField(write_only=True)
 
     def validate(self, data):
+        errors_data = {'amount_field': {
+            'amount': ['Убедитесь, что указали значение больше 0.']}
+        }
         amount = data['amount']
         if amount < 1:
-            error_data = {
-                'amount': ['Убедитесь, что указали значение больше 0.']
-            }
-            raise exceptions.ParseError(error_data)
+            raise exceptions.ParseError(errors_data['amount_field'])
         return data
 
     def to_representation(self, instance):
-        ingredient_in_recipe = [
-            item for item in
-            IngredientForRecipe.objects.filter(ingredient=instance)
-        ]
-        return IngredientForRecipeSerializer(ingredient_in_recipe).data
+        recipe = [i for i in instance.recipe_set.all()]
+        return IngredientForRecipeSerializer(
+            IngredientForRecipe.objects.filter(recipe=recipe[0].id), many=True
+        ).data
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -127,13 +126,15 @@ class RecipeSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
+        errors_data = {
+            'duplicate_recipes': {
+                "errors": f"Рецепт с таким названием: {data['name']} уже "
+                          f"существует"},
+        }
         request = self.context['request']
         exist_recipe = Recipe.objects.filter(name=data['name']).exists()
         if request.method == 'POST' and exist_recipe:
-            raise serializers.ValidationError({
-                "errors": f"Рецепт с таким названием: {data['name']} "
-                          f"уже существует"
-            })
+            raise serializers.ValidationError(errors_data['duplicate_recipes'])
         return data
 
     def get_is_favorited(self, obj):
