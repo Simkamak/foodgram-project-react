@@ -98,6 +98,7 @@ def download_shopping_cart(request):
     ingredients_in_recipe = IngredientForRecipe.objects.filter(
         recipe__purchase__user=user
     )
+    buying_list = {}
     for item in ingredients_in_recipe:
         amount = item.amount
         name = item.ingredient.name
